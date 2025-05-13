@@ -392,9 +392,13 @@
 
     // --- Main Animation State ---
     let walkFrame = 0;
+    // Calculate a dynamic ground baseline for all characters
+    function getGroundY() {
+      return H - Math.max(0.13 * H, 60); // 13% from bottom or at least 60px
+    }
     let stickman = {
       x: () => W - 60,
-      y: () => H - 60,
+      y: () => getGroundY(),
       dir: -1, // -1: left, 1: right
       speed: 2.1,
       state: 'walkingLeft', // walkingLeft, thinking, walkingCenter, inviting, celebrating
@@ -455,6 +459,7 @@
       walkFrame++;
       // Main stickman logic
       if (stickman.state === 'walkingLeft') {
+        stickmanY = stickman.y();
         drawStickman(stickmanX, stickmanY, walkFrame, '#fbbf24', 1, true, false);
         stickmanX += stickman.dir * stickman.speed;
         if (stickmanX < 80) {
@@ -462,6 +467,7 @@
           stickman.timer = 0;
         }
       } else if (stickman.state === 'thinking') {
+        stickmanY = stickman.y();
         drawStickman(stickmanX, stickmanY, walkFrame, '#fbbf24', 1, true, true);
         drawThoughtBubble(stickmanX, stickmanY - 40, 'Oh! I forgot...');
         stickman.timer++;
@@ -470,6 +476,7 @@
           stickman.dir = 1;
         }
       } else if (stickman.state === 'walkingCenter') {
+        stickmanY = stickman.y();
         drawStickman(stickmanX, stickmanY, walkFrame, '#fbbf24', 1, true, false);
         stickmanX += stickman.dir * stickman.speed;
         if (stickmanX > W / 2 - 10) {
@@ -490,33 +497,35 @@
           ];
         }
       } else if (stickman.state === 'inviting') {
+        stickmanY = stickman.y();
         drawStickman(stickmanX, stickmanY, walkFrame, '#fbbf24', 1, true, false);
         let allArrived = true;
         friends.forEach((f, i) => {
-          if (walkFrame > f.delay) {
-            let targetX = W / 2 - 60 + i * 40;
-            if ((f.dir === 1 && f.x < targetX) || (f.dir === -1 && f.x > targetX + 20)) {
-              f.x += f.dir * 2.2;
-              allArrived = false;
-            }
-            drawStickman(f.x, f.y, walkFrame + i * 10, f.color, f.scale, true, false);
+          let targetX = W / 2 - 60 + i * 40;
+          // Set y based on ground
+          f.y = getGroundY() - (60 * (1 - f.scale)); // scale up = lower, scale down = higher
+          if ((f.dir === 1 && f.x < targetX) || (f.dir === -1 && f.x > targetX + 20)) {
+            f.x += f.dir * 2.2;
+            allArrived = false;
           }
+          drawStickman(f.x, f.y, walkFrame + i * 10, f.color, f.scale, true, false);
         });
         animals.forEach((a, i) => {
-          if (walkFrame > a.delay) {
-            let targetX = a.type === 'cat' ? W / 2 + 100 : (W / 2 - 100 + i * 60);
-            if (a.type === 'cat') {
-              if ((a.dir === 1 && a.x < targetX) || (a.dir === -1 && a.x > targetX)) {
-                a.x += a.dir * 2.1;
-              }
-              drawCat(a.x, a.y, a.scale);
-            } else if (a.type === 'bird') {
-              if ((a.dir === 1 && a.x < targetX) || (a.dir === -1 && a.x > targetX)) {
-                a.x += a.dir * 2.5;
-                a.y += Math.sin(walkFrame / 8 + i) * 1.2;
-              }
-              drawBird(a.x, a.y, a.scale, a.color);
+          let targetX = a.type === 'cat' ? W / 2 + 100 : (W / 2 - 100 + i * 60);
+          // Set y based on ground
+          if (a.type === 'cat') {
+            a.y = getGroundY() - 20;
+            if ((a.dir === 1 && a.x < targetX) || (a.dir === -1 && a.x > targetX)) {
+              a.x += a.dir * 2.1;
             }
+            drawCat(a.x, a.y, a.scale);
+          } else if (a.type === 'bird') {
+            a.y = getGroundY() - 150 - i * 20;
+            if ((a.dir === 1 && a.x < targetX) || (a.dir === -1 && a.x > targetX)) {
+              a.x += a.dir * 2.5;
+              a.y += Math.sin(walkFrame / 8 + i) * 1.2;
+            }
+            drawBird(a.x, a.y, a.scale, a.color);
           }
         });
         if (allArrived && friends.length > 0) {
@@ -526,14 +535,15 @@
           spawnConfetti();
         }
       } else if (stickman.state === 'celebrating') {
-        // Draw all together
+        stickmanY = stickman.y();
         drawStickman(stickmanX, stickmanY, walkFrame, '#fbbf24', 1, true, false);
         friends.forEach((f, i) => {
+          f.y = getGroundY() - (60 * (1 - f.scale));
           drawStickman(f.x, f.y, walkFrame + i * 10, f.color, f.scale, true, false);
         });
         animals.forEach((a, i) => {
-          if (a.type === 'cat') drawCat(a.x, a.y, a.scale);
-          else if (a.type === 'bird') drawBird(a.x, a.y, a.scale, a.color);
+          if (a.type === 'cat') { a.y = getGroundY() - 20; drawCat(a.x, a.y, a.scale); }
+          else if (a.type === 'bird') { a.y = getGroundY() - 150 - i * 20; drawBird(a.x, a.y, a.scale, a.color); }
         });
         celebrationTimer++;
         if (celebrationTimer > 20) {
