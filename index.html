@@ -87,7 +87,7 @@
 <body>
   <canvas id="birthdayCanvas"></canvas>
   <div class="message" id="mainMessage"></div>
-  <div id="audioNotice">Tap anywhere to enable sound 🎵</div>
+  <div id="audioNotice"></div>
   <!-- Local Happy Birthday audio file -->
   <audio id="bdayAudio" preload="auto" style="display:none;">
     <source src="audio1.mp3" type="audio/mp3">
@@ -394,7 +394,7 @@
     let walkFrame = 0;
     // Calculate a dynamic ground baseline for all characters
     function getGroundY() {
-      return H - Math.max(0.13 * H, 60); // 13% from bottom or at least 60px
+      return H - Math.max(0.30 * H, 60); // 30% from bottom or at least 60px
     }
     let stickman = {
       x: () => W - 60,
