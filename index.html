@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Happy Birthday Yashvi!</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      overflow: hidden;
+      background: #181c2b;
+      touch-action: none;
+    }
+    body {
+      width: 100vw;
+      height: 100vh;
+      min-height: 100vh;
+      min-width: 100vw;
+      max-width: 100vw;
+      max-height: 100vh;
+      overflow: hidden;
+      position: fixed;
+      left: 0;
+      top: 0;
+    }
+    #birthdayCanvas {
+      display: block;
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 100vw;
+      height: 100vh;
+      min-width: 100vw;
+      min-height: 100vh;
+      max-width: 100vw;
+      max-height: 100vh;
+      background: transparent;
+      touch-action: none;
+      z-index: 1;
+    }
+    .message {
+      position: fixed;
+      top: 30px;
+      left: 0;
+      width: 100vw;
+      text-align: center;
+      font-size: 2.7rem;
+      font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+      color: #fbbf24;
+      letter-spacing: 2px;
+      text-shadow: 0 0 18px #fff, 0 0 30px #fbbf24, 0 0 10px #a5b4fc;
+      z-index: 10;
+      pointer-events: none;
+      transition: text-shadow 0.5s;
+      user-select: none;
+    }
+    @media (max-width: 600px) {
+      .message {
+        font-size: 1.5rem;
+        top: 10px;
+      }
+    }
+    #audioNotice {
+      position: fixed;
+      bottom: 20px;
+      left: 0;
+      width: 100vw;
+      text-align: center;
+      color: #fff;
+      font-size: 1.1rem;
+      font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+      text-shadow: 0 0 8px #000, 0 0 10px #a5b4fc;
+      z-index: 20;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+    #audioNotice.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="birthdayCanvas"></canvas>
+  <div class="message" id="mainMessage"></div>
+  <div id="audioNotice">Tap anywhere to enable sound 🎵</div>
+  <!-- Local Happy Birthday audio file -->
+  <audio id="bdayAudio" preload="auto" style="display:none;">
+    <source src="audio1.mp3" type="audio/mp3">
+    <source src="audio1.m4a" type="audio/mp4">
+    Your browser does not support the audio element.
+  </audio>
+  <script>
+    // Responsive fullscreen canvas setup
+    const canvas = document.getElementById('birthdayCanvas');
+    const ctx = canvas.getContext('2d');
+    let W = window.innerWidth;
+    let H = window.innerHeight;
+    function resizeCanvas() {
+      W = window.innerWidth;
+      H = window.innerHeight;
+      canvas.width = W;
+      canvas.height = H;
+      drawNightCityStatic();
+    }
+    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('orientationchange', resizeCanvas);
+    // For iOS Safari address bar hiding
+    window.addEventListener('load', () => setTimeout(resizeCanvas, 100));
+
+    // --- City Night Background (static, drawn once) ---
+    let cityBg = document.createElement('canvas');
+    let cityCtx = cityBg.getContext('2d');
+    function drawNightCityStatic() {
+      cityBg.width = W;
+      cityBg.height = H;
+      // Sky
+      cityCtx.fillStyle = '#181c2b';
+      cityCtx.fillRect(0, 0, W, H);
+      // Stars
+      for (let i = 0; i < 60; i++) {
+        cityCtx.beginPath();
+        cityCtx.arc(Math.random() * W, Math.random() * 120, Math.random() * 1.5 + 0.5, 0, Math.PI * 2);
+        cityCtx.fillStyle = '#fff8';
+        cityCtx.fill();
+      }
+      // Buildings
+      const buildingColors = ['#232946', '#2c365d', '#393e6e', '#22223b', '#3a3a5d'];
+      let x = 0;
+      while (x < W) {
+        let bw = 40 + Math.random() * 40;
+        let bh = 80 + Math.random() * 120;
+        cityCtx.fillStyle = buildingColors[Math.floor(Math.random() * buildingColors.length)];
+        cityCtx.fillRect(x, H - bh, bw, bh);
+        // Windows
+        for (let wy = H - bh + 15; wy < H - 10; wy += 20) {
+          for (let wx = x + 8; wx < x + bw - 8; wx += 16) {
+            if (Math.random() > 0.6) {
+              cityCtx.fillStyle = '#ffe066';
+              cityCtx.fillRect(wx, wy, 6, 10);
+            }
+          }
+        }
+        x += bw - 5;
+      }
+      // Ground
+      cityCtx.fillStyle = '#22223b';
+      cityCtx.fillRect(0, H - 20, W, 20);
+    }
+    resizeCanvas();
+
+    // --- Stickman Animation ---
+    function drawStickman(x, y, walkFrame = 0, color = '#fbbf24', scale = 1, fill = true, freeze = false) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+      // Shadow
+      ctx.save();
+      ctx.globalAlpha = 0.25;
+      ctx.beginPath();
+      ctx.ellipse(0, 65, 22, 8, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#000';
+      ctx.filter = 'blur(2px)';
+      ctx.fill();
+      ctx.restore();
+      // Body gradient
+      let grad = ctx.createLinearGradient(0, -30, 0, 60);
+      grad.addColorStop(0, color);
+      grad.addColorStop(1, '#fffbe6');
+      // Head
+      ctx.beginPath();
+      ctx.arc(0, -30, 15, 0, Math.PI * 2);
+      if (fill) {
+        ctx.fillStyle = grad;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 8;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = color;
+      ctx.stroke();
+      // Body
+      ctx.beginPath();
+      ctx.moveTo(0, -15);
+      ctx.lineTo(0, 30);
+      if (fill) {
+        ctx.strokeStyle = grad;
+      } else {
+        ctx.strokeStyle = color;
+      }
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      // Arms (swinging, smooth)
+      let armSwing = freeze ? 0 : Math.sin(walkFrame / 10) * 16;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-20 + armSwing, 10);
+      ctx.moveTo(0, 0);
+      ctx.lineTo(20 - armSwing, 10);
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = color;
+      ctx.stroke();
+      // Legs (walking, smooth)
+      let legSwing = freeze ? 0 : Math.sin(walkFrame / 10) * 18;
+      ctx.beginPath();
+      ctx.moveTo(0, 30);
+      ctx.lineTo(-15 + legSwing, 60);
+      ctx.moveTo(0, 30);
+      ctx.lineTo(15 - legSwing, 60);
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = color;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // --- Cat and Bird Drawing ---
+    function drawCat(x, y, scale = 1) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+      // Shadow
+      ctx.save();
+      ctx.globalAlpha = 0.18;
+      ctx.beginPath();
+      ctx.ellipse(0, 22, 18, 6, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#000';
+      ctx.filter = 'blur(1.5px)';
+      ctx.fill();
+      ctx.restore();
+      // Body
+      ctx.beginPath();
+      ctx.ellipse(0, 10, 18, 12, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#444';
+      ctx.fill();
+      // Head
+      ctx.beginPath();
+      ctx.arc(0, -6, 9, 0, Math.PI * 2);
+      ctx.fillStyle = '#444';
+      ctx.fill();
+      // Ears
+      ctx.beginPath();
+      ctx.moveTo(-6, -12);
+      ctx.lineTo(-2, -16);
+      ctx.lineTo(-1, -7);
+      ctx.moveTo(6, -12);
+      ctx.lineTo(2, -16);
+      ctx.lineTo(1, -7);
+      ctx.strokeStyle = '#444';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      // Eyes
+      ctx.beginPath();
+      ctx.arc(-3, -6, 1.2, 0, Math.PI * 2);
+      ctx.arc(3, -6, 1.2, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+      // Tail
+      ctx.beginPath();
+      ctx.moveTo(14, 12);
+      ctx.quadraticCurveTo(24, 18, 18, 2);
+      ctx.strokeStyle = '#444';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.restore();
+    }
+    function drawBird(x, y, scale = 1, color = '#38bdf8') {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+      // Body
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 8, 5, 0, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      // Wing
+      ctx.beginPath();
+      ctx.ellipse(-2, 0, 3, 2, Math.PI / 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff8';
+      ctx.fill();
+      // Beak
+      ctx.beginPath();
+      ctx.moveTo(8, 0);
+      ctx.lineTo(12, 1.5);
+      ctx.lineTo(8, 2.5);
+      ctx.fillStyle = '#fbbf24';
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawThoughtBubble(x, y, text) {
+      ctx.save();
+      ctx.globalAlpha = 0.95;
+      ctx.beginPath();
+      ctx.ellipse(x + 60, y - 60, 70, 40, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff';
+      ctx.shadowColor = '#a5b4fc';
+      ctx.shadowBlur = 10;
+      ctx.fill();
+      ctx.strokeStyle = '#bbb';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      // Small bubbles
+      ctx.beginPath();
+      ctx.arc(x + 30, y - 30, 10, 0, Math.PI * 2);
+      ctx.arc(x + 15, y - 15, 5, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+      ctx.stroke();
+      // Text
+      ctx.fillStyle = '#6d28d9';
+      ctx.font = 'bold 18px Comic Sans MS, Comic Sans, cursive';
+      ctx.textAlign = 'center';
+      ctx.fillText(text, x + 60, y - 60 + 8);
+      ctx.restore();
+    }
+
+    // --- Confetti and Fireworks ---
+    let confetti = [];
+    let fireworks = [];
+    function spawnConfetti() {
+      for (let i = 0; i < 60; i++) {
+        confetti.push({
+          x: Math.random() * W,
+          y: -10 - Math.random() * 40,
+          r: 4 + Math.random() * 4,
+          color: `hsl(${Math.random() * 360},90%,60%)`,
+          vy: 1.5 + Math.random() * 2,
+          vx: (Math.random() - 0.5) * 1.2,
+          rot: Math.random() * Math.PI * 2,
+          vrot: (Math.random() - 0.5) * 0.1
+        });
+      }
+    }
+    function drawConfetti() {
+      confetti.forEach(c => {
+        ctx.save();
+        ctx.translate(c.x, c.y);
+        ctx.rotate(c.rot);
+        ctx.fillStyle = c.color;
+        ctx.fillRect(-c.r / 2, -c.r / 2, c.r, c.r);
+        ctx.restore();
+        c.x += c.vx;
+        c.y += c.vy;
+        c.rot += c.vrot;
+      });
+      confetti = confetti.filter(c => c.y < H + 20);
+    }
+    function spawnFirework() {
+      let fx = Math.random() * (W * 0.7) + W * 0.15;
+      let fy = Math.random() * (H * 0.3) + H * 0.1;
+      let color = `hsl(${Math.random() * 360},90%,60%)`;
+      let particles = [];
+      for (let i = 0; i < 24; i++) {
+        let angle = (Math.PI * 2 * i) / 24;
+        let speed = 2 + Math.random() * 1.5;
+        particles.push({
+          x: fx,
+          y: fy,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          alpha: 1,
+          color
+        });
+      }
+      fireworks.push({ particles });
+    }
+    function drawFireworks() {
+      fireworks.forEach(fw => {
+        fw.particles.forEach(p => {
+          ctx.save();
+          ctx.globalAlpha = p.alpha;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+          ctx.fillStyle = p.color;
+          ctx.shadowColor = p.color;
+          ctx.shadowBlur = 10;
+          ctx.fill();
+          ctx.restore();
+          p.x += p.vx;
+          p.y += p.vy;
+          p.alpha -= 0.018;
+        });
+      });
+      fireworks = fireworks.filter(fw => fw.particles.some(p => p.alpha > 0));
+    }
+
+    // --- Main Animation State ---
+    let walkFrame = 0;
+    let stickman = {
+      x: () => W - 60,
+      y: () => H - 60,
+      dir: -1, // -1: left, 1: right
+      speed: 2.1,
+      state: 'walkingLeft', // walkingLeft, thinking, walkingCenter, inviting, celebrating
+      timer: 0
+    };
+    let stickmanX = stickman.x();
+    let stickmanY = stickman.y();
+    // Friends array for joining stickmen
+    let friends = [];
+    let animals = [];
+    let celebration = false;
+    let celebrationTimer = 0;
+    let fireworksTimer = 0;
+    let audioPlayed = false;
+    const bdayAudio = document.getElementById('bdayAudio');
+    const audioNotice = document.getElementById('audioNotice');
+    let audioReady = false;
+
+    // Mobile audio unlock
+    function unlockAudio() {
+      if (!audioReady) {
+        bdayAudio.play().then(() => {
+          bdayAudio.pause();
+          bdayAudio.currentTime = 0;
+          audioReady = true;
+          audioNotice.classList.remove('show');
+        }).catch(() => {
+          audioNotice.classList.add('show');
+        });
+      }
+    }
+    window.addEventListener('touchstart', unlockAudio, { once: true });
+    window.addEventListener('click', unlockAudio, { once: true });
+
+    // Play audio as soon as possible
+    function tryPlayAudio() {
+      if (!audioPlayed && audioReady) {
+        bdayAudio.currentTime = 0;
+        bdayAudio.play().catch(() => {
+          audioNotice.classList.add('show');
+        });
+        audioPlayed = true;
+      }
+    }
+    // Try to play audio as soon as the site opens (after unlock)
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(tryPlayAudio, 500);
+    });
+
+    function clear() {
+      ctx.clearRect(0, 0, W, H);
+    }
+
+    function animate() {
+      clear();
+      // Draw static city background
+      ctx.drawImage(cityBg, 0, 0, W, H);
+      walkFrame++;
+      // Main stickman logic
+      if (stickman.state === 'walkingLeft') {
+        drawStickman(stickmanX, stickmanY, walkFrame, '#fbbf24', 1, true, false);
+        stickmanX += stickman.dir * stickman.speed;
+        if (stickmanX < 80) {
+          stickman.state = 'thinking';
+          stickman.timer = 0;
+        }
+      } else if (stickman.state === 'thinking') {
+        drawStickman(stickmanX, stickmanY, walkFrame, '#fbbf24', 1, true, true);
+        drawThoughtBubble(stickmanX, stickmanY - 40, 'Oh! I forgot...');
+        stickman.timer++;
+        if (stickman.timer > 120) { // ~2 seconds
+          stickman.state = 'walkingCenter';
+          stickman.dir = 1;
+        }
+      } else if (stickman.state === 'walkingCenter') {
+        drawStickman(stickmanX, stickmanY, walkFrame, '#fbbf24', 1, true, false);
+        stickmanX += stickman.dir * stickman.speed;
+        if (stickmanX > W / 2 - 10) {
+          stickman.state = 'inviting';
+          stickman.timer = 0;
+          // Spawn friends (different heights)
+          friends = [
+            { x: -60, y: H - 60, dir: 1, color: '#38bdf8', delay: 0, scale: 1.1 }, // tall
+            { x: W + 60, y: H - 50, dir: -1, color: '#f472b6', delay: 20, scale: 0.8 }, // child
+            { x: -120, y: H - 55, dir: 1, color: '#34d399', delay: 40, scale: 0.9 }, // child
+            { x: W + 120, y: H - 70, dir: -1, color: '#f87171', delay: 60, scale: 1.3 } // big man
+          ];
+          // Animals
+          animals = [
+            { type: 'cat', x: -80, y: H - 30, dir: 1, delay: 80, scale: 0.7 },
+            { type: 'bird', x: W + 20, y: H - 180, dir: -1, delay: 100, scale: 1, color: '#38bdf8' },
+            { type: 'bird', x: -30, y: H - 200, dir: 1, delay: 120, scale: 1, color: '#fbbf24' }
+          ];
+        }
+      } else if (stickman.state === 'inviting') {
+        drawStickman(stickmanX, stickmanY, walkFrame, '#fbbf24', 1, true, false);
+        let allArrived = true;
+        friends.forEach((f, i) => {
+          if (walkFrame > f.delay) {
+            let targetX = W / 2 - 60 + i * 40;
+            if ((f.dir === 1 && f.x < targetX) || (f.dir === -1 && f.x > targetX + 20)) {
+              f.x += f.dir * 2.2;
+              allArrived = false;
+            }
+            drawStickman(f.x, f.y, walkFrame + i * 10, f.color, f.scale, true, false);
+          }
+        });
+        animals.forEach((a, i) => {
+          if (walkFrame > a.delay) {
+            let targetX = a.type === 'cat' ? W / 2 + 100 : (W / 2 - 100 + i * 60);
+            if (a.type === 'cat') {
+              if ((a.dir === 1 && a.x < targetX) || (a.dir === -1 && a.x > targetX)) {
+                a.x += a.dir * 2.1;
+              }
+              drawCat(a.x, a.y, a.scale);
+            } else if (a.type === 'bird') {
+              if ((a.dir === 1 && a.x < targetX) || (a.dir === -1 && a.x > targetX)) {
+                a.x += a.dir * 2.5;
+                a.y += Math.sin(walkFrame / 8 + i) * 1.2;
+              }
+              drawBird(a.x, a.y, a.scale, a.color);
+            }
+          }
+        });
+        if (allArrived && friends.length > 0) {
+          stickman.state = 'celebrating';
+          celebration = true;
+          celebrationTimer = 0;
+          spawnConfetti();
+        }
+      } else if (stickman.state === 'celebrating') {
+        // Draw all together
+        drawStickman(stickmanX, stickmanY, walkFrame, '#fbbf24', 1, true, false);
+        friends.forEach((f, i) => {
+          drawStickman(f.x, f.y, walkFrame + i * 10, f.color, f.scale, true, false);
+        });
+        animals.forEach((a, i) => {
+          if (a.type === 'cat') drawCat(a.x, a.y, a.scale);
+          else if (a.type === 'bird') drawBird(a.x, a.y, a.scale, a.color);
+        });
+        celebrationTimer++;
+        if (celebrationTimer > 20) {
+          document.getElementById('mainMessage').textContent = 'Happy Bday Yashvi! 🎉';
+          drawConfetti();
+          if (fireworksTimer % 40 === 0) spawnFirework();
+          drawFireworks();
+          fireworksTimer++;
+          // Play audio once
+          tryPlayAudio();
+        }
+      }
+      // Message reset
+      if (!celebration) {
+        document.getElementById('mainMessage').textContent = '';
+      }
+      if (celebration && celebrationTimer > 20) {
+        drawConfetti();
+        drawFireworks();
+        fireworksTimer++;
+        if (fireworksTimer % 40 === 0) spawnFirework();
+      }
+      requestAnimationFrame(animate);
+    }
+
+    // Start animation
+    animate();
+  </script>
+</body>
+</html>
