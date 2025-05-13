@@ -43,24 +43,41 @@
     }
     .message {
       position: fixed;
-      top: 30px;
-      left: 0;
-      width: 100vw;
+      top: 15vh;
+      left: 50%;
+      transform: translateX(-50%);
+      min-width: 60vw;
+      max-width: 90vw;
       text-align: center;
-      font-size: 2.7rem;
+      font-size: 2.1rem;
       font-family: 'Comic Sans MS', 'Comic Sans', cursive;
       color: #fbbf24;
       letter-spacing: 2px;
       text-shadow: 0 0 18px #fff, 0 0 30px #fbbf24, 0 0 10px #a5b4fc;
-      z-index: 10;
-      pointer-events: none;
-      transition: text-shadow 0.5s;
+      z-index: 100;
+      background: rgba(24,28,43,0.85);
+      border-radius: 18px;
+      padding: 16px 24px;
+      box-shadow: 0 2px 16px #0008;
+      pointer-events: auto;
+      transition: opacity 0.4s, text-shadow 0.5s;
       user-select: none;
+      opacity: 1;
+    }
+    .message.hide { opacity: 0; pointer-events: none; }
+    .message.bday {
+      font-size: 2.8rem;
+      font-weight: bold;
+      color: #ffe066;
+      text-shadow: 0 0 24px #fff, 0 0 40px #fbbf24, 0 0 16px #a5b4fc;
     }
     @media (max-width: 600px) {
       .message {
         font-size: 1.5rem;
         top: 10px;
+      }
+      .message.bday {
+        font-size: 2rem;
       }
     }
     #audioNotice {
@@ -86,7 +103,7 @@
 </head>
 <body>
   <canvas id="birthdayCanvas"></canvas>
-  <div class="message" id="mainMessage">Tap to play song:p</div>
+  <div class="message" id="mainMessage">Tap to play song :p</div>
   <div id="audioNotice"></div>
   <!-- Local Happy Birthday audio file -->
   <audio id="bdayAudio" preload="auto" style="display:none;">
@@ -135,9 +152,9 @@
         let bw = 40 + Math.random() * 40;
         let bh = 80 + Math.random() * 120;
         cityCtx.fillStyle = buildingColors[Math.floor(Math.random() * buildingColors.length)];
-        cityCtx.fillRect(x, H - bh, bw, bh);
+        cityCtx.fillRect(x, H - 40 - bh, bw, bh);
         // Windows
-        for (let wy = H - bh + 15; wy < H - 10; wy += 20) {
+        for (let wy = H - 40 - bh + 15; wy < H - 40 - 10; wy += 20) {
           for (let wx = x + 8; wx < x + bw - 8; wx += 16) {
             if (Math.random() > 0.6) {
               cityCtx.fillStyle = '#ffe066';
@@ -147,9 +164,16 @@
         }
         x += bw - 5;
       }
-      // Ground
+      // Road (thicker)
       cityCtx.fillStyle = '#22223b';
-      cityCtx.fillRect(0, H - 20, W, 20);
+      cityCtx.fillRect(0, H - 120, W, 120);
+      // Road line
+      cityCtx.strokeStyle = '#fff';
+      cityCtx.lineWidth = 3;
+      cityCtx.beginPath();
+      cityCtx.moveTo(0, H - 120 + 8);
+      cityCtx.lineTo(W, H - 120 + 8);
+      cityCtx.stroke();
     }
     resizeCanvas();
 
@@ -394,7 +418,7 @@
     let walkFrame = 0;
     // Calculate a dynamic ground baseline for all characters
     function getGroundY() {
-      return H - 20; // Always stand on the road (bottom 20px)
+      return H - 120; // Always stand on the road (top of 40px road)
     }
     let stickman = {
       x: () => W - 60,
@@ -425,6 +449,8 @@
           bdayAudio.currentTime = 0;
           audioReady = true;
           audioNotice.classList.remove('show');
+          // Hide tap message
+          document.getElementById('mainMessage').classList.add('hide');
         }).catch(() => {
           audioNotice.classList.add('show');
         });
@@ -441,6 +467,8 @@
           audioNotice.classList.add('show');
         });
         audioPlayed = true;
+        // Hide tap message
+        document.getElementById('mainMessage').classList.add('hide');
       }
     }
     // Try to play audio as soon as the site opens (after unlock)
@@ -547,7 +575,9 @@
         });
         celebrationTimer++;
         if (celebrationTimer > 20) {
-          document.getElementById('mainMessage').textContent = 'Happy Bday Yashvi! 🎉';
+          const msgDiv = document.getElementById('mainMessage');
+          msgDiv.textContent = 'Happy Bday Yashvi! 🎉';
+          msgDiv.classList.add('bday');
           drawConfetti();
           if (fireworksTimer % 40 === 0) spawnFirework();
           drawFireworks();
@@ -558,7 +588,9 @@
       }
       // Message reset
       if (!celebration) {
-        document.getElementById('mainMessage').textContent = '';
+        const msgDiv = document.getElementById('mainMessage');
+        msgDiv.textContent = '';
+        msgDiv.classList.remove('bday');
       }
       if (celebration && celebrationTimer > 20) {
         drawConfetti();
